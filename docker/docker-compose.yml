@@ -1,0 +1,102 @@
+# =============================================================================
+# Isaac Sim / Lab Development Container - Docker Compose
+# =============================================================================
+# Usage:
+#   docker compose build
+#   docker compose up -d
+#   docker compose exec isaac-dev zsh
+#
+# This file is designed to work both standalone (docker compose) and as
+# the backend for VS Code devcontainers.
+# =============================================================================
+
+services:
+  isaac-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ISAAC_SIM_VERSION: ${ISAAC_SIM_VERSION:-5.1.0}
+        ISAAC_LAB_VERSION: ${ISAAC_LAB_VERSION:-v2.3.2}
+        ISAAC_LAB_REPO: ${ISAAC_LAB_REPO:-https://github.com/isaac-sim/IsaacLab.git}
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+        HOST_USER: ${HOST_USER:-${USER:-developer}}
+    image: isaac-lab-dev:latest
+    container_name: isaac-lab-dev
+
+    # --- Runtime ---
+    runtime: nvidia
+    environment:
+      - ACCEPT_EULA=${ACCEPT_EULA:-Y}
+      - PRIVACY_CONSENT=${PRIVACY_CONSENT:-Y}
+      - DISPLAY=${DISPLAY:-:1}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - HOST_USER=${HOST_USER:-${USER:-developer}}
+    
+    # --- Network: host mode for DDS, X11, WebRTC streaming ---
+    network_mode: host
+
+    # --- Full hardware access ---
+    privileged: true
+    volumes:
+      # -- Project workspace (host project dir → container /workspace) --
+      - ..:/workspace:rw
+
+      # -- Isaac Sim caches (persist across container restarts) --
+      - isaac-sim-cache-kit:/isaac-sim/kit/cache
+      - isaac-sim-cache-ov:/root/.cache/ov
+      - isaac-sim-cache-pip:/root/.cache/pip
+      - isaac-sim-cache-glcache:/root/.cache/nvidia/GLCache
+      - isaac-sim-cache-computecache:/root/.nv/ComputeCache
+      - isaac-sim-logs:/root/.nvidia-omniverse/logs
+      - isaac-sim-data:/root/.local/share/ov/data
+
+      # -- Host config directories (read-only where appropriate) --
+      - ${HOME}/.ssh:/home/${HOST_USER:-developer}/.ssh:ro
+      - ${HOME}/.gitconfig:/home/${HOST_USER:-developer}/.gitconfig:ro
+
+      # -- X11 / GUI forwarding --
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/${HOST_USER:-developer}/.Xauthority:ro
+
+      # -- Hardware: USB, serial, shared memory --
+      - /dev:/dev:rw
+      - /dev/shm:/dev/shm
+      - /run/udev:/run/udev:ro
+
+    # --- Resource limits: use all host resources ---
+    # No mem_limit / cpus set → container can use all host RAM & CPU
+    # ipc: host → container shares the host's IPC namespace including /dev/shm.
+    #   On Linux, /dev/shm defaults to 50% of physical RAM (64GB host → 32GB).
+    #   This makes shm_size unnecessary (it is ignored when ipc=host).
+    #   Required for PyTorch DataLoader workers, TensorRT, NCCL, etc.
+    ipc: host
+    pid: host
+
+    # --- Device access (USB cameras, serial, etc.) ---
+    # privileged: true already grants /dev access, but be explicit:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, utility, graphics, video, display]
+
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+
+    # Keep container alive for attach
+    command: ["sleep", "infinity"]
+
+volumes:
+  isaac-sim-cache-kit:
+  isaac-sim-cache-ov:
+  isaac-sim-cache-pip:
+  isaac-sim-cache-glcache:
+  isaac-sim-cache-computecache:
+  isaac-sim-logs:
+  isaac-sim-data:

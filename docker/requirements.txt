@@ -1,0 +1,41 @@
+# =============================================================================
+# Additional Python packages for Isaac Sim / Lab development
+# Install target: Isaac Sim's internal Python (NOT system Python)
+#
+# Usage in Dockerfile:
+#   /isaac-sim/python.sh -m pip install -r /tmp/requirements.txt
+#
+# NOTE: Isaac Sim ships its own numpy, torch, etc.
+#       Only add packages that are NOT already bundled.
+#       Run `/isaac-sim/python.sh -m pip list` inside the container to check.
+# =============================================================================
+
+# --- Development / debugging ---
+debugpy
+ipdb
+rich
+
+# --- Code quality ---
+ruff
+mypy
+
+# --- Testing ---
+pytest
+pytest-xdist
+
+# --- Utilities ---
+tqdm
+pyyaml
+hydra-core
+omegaconf
+
+# --- Visualization / logging ---
+tensorboard
+wandb
+matplotlib
+
+# --- RL frameworks (uncomment as needed; Isaac Lab installs some via isaaclab.sh -i) ---
+# stable-baselines3
+# rl-games
+# rsl-rl-lib
+# skrl

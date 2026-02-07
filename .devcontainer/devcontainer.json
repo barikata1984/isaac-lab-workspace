@@ -1,0 +1,133 @@
+{
+  "name": "Isaac Sim / Lab Dev",
+
+  // --------------------------------------------------------------------------
+  // Use docker-compose as the backend — minimal devcontainer-specific config.
+  // The same docker-compose.yml works standalone with `docker compose up`.
+  // --------------------------------------------------------------------------
+  "dockerComposeFile": ["../docker/docker-compose.yml"],
+  "service": "isaac-dev",
+  "workspaceFolder": "/workspace",
+
+  // --------------------------------------------------------------------------
+  // Run as the non-root user created in the Dockerfile
+  // --------------------------------------------------------------------------
+  "remoteUser": "${localEnv:USER:developer}",
+
+  // --------------------------------------------------------------------------
+  // VS Code settings applied inside the container
+  // --------------------------------------------------------------------------
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Shell
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": { "path": "/bin/zsh" }
+        },
+
+        // Python — point to Isaac Sim's bundled Python
+        "python.defaultInterpreterPath": "/isaac-sim/python.sh",
+        "python.analysis.extraPaths": [
+          "/isaac-sim/exts",
+          "/isaac-sim/extsPhysics",
+          "/opt/isaac-lab/source/isaaclab",
+          "/opt/isaac-lab/source/isaaclab_tasks",
+          "/opt/isaac-lab/source/isaaclab_rl"
+        ],
+
+        // Linting / formatting
+        "python.analysis.typeCheckingMode": "basic",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+
+        // Files
+        "files.watcherExclude": {
+          "**/.git/**": true,
+          "**/kit/cache/**": true,
+          "**/__pycache__/**": true,
+          "**/.mypy_cache/**": true
+        },
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/.mypy_cache": true
+        }
+      },
+
+      // ----------------------------------------------------------------------
+      // Extensions
+      // ----------------------------------------------------------------------
+      "extensions": [
+        // --- AI assistant ---
+        "anthropic.claude-code",
+
+        // --- Python core ---
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // --- Jupyter (useful for interactive prototyping) ---
+        "ms-toolsai.jupyter",
+
+        // --- Docker & containers ---
+        "ms-azuretools.vscode-docker",
+
+        // --- Git ---
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+
+        // --- Remote / SSH (if connecting to remote host) ---
+        "ms-vscode-remote.remote-ssh",
+
+        // --- YAML / TOML / Markdown (configs, docs) ---
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml",
+        "yzhang.markdown-all-in-one",
+
+        // --- USD syntax (Omniverse USD files) ---
+        "nickmccurdy.usd",
+
+        // --- Debugging ---
+        "ms-python.debugpy",
+
+        // --- Misc productivity ---
+        "streetsidesoftware.code-spell-checker",
+        "usernamehw.errorlens",
+        "gruntfuggly.todo-tree",
+        "christian-kohler.path-intellisense",
+        "wayou.vscode-todo-highlight"
+      ]
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // Lifecycle hooks — run once after container creation
+  // --------------------------------------------------------------------------
+  "postCreateCommand": "echo '✅ Isaac Sim + Lab dev container ready.' && /isaac-sim/python.sh --version",
+
+  // --------------------------------------------------------------------------
+  // Forward WebRTC streaming port (Isaac Sim UI streaming)
+  // Note: network_mode=host in compose, so ports are already exposed.
+  // These are listed here for documentation / convenience.
+  // --------------------------------------------------------------------------
+  "forwardPorts": [8211, 48010, 49000],
+  "portsAttributes": {
+    "8211":  { "label": "Isaac Sim WebRTC",     "onAutoForward": "notify" },
+    "48010": { "label": "Isaac Sim Livestream",  "onAutoForward": "notify" },
+    "49000": { "label": "Isaac Sim Kit Remote",  "onAutoForward": "notify" }
+  },
+
+  // --------------------------------------------------------------------------
+  // Feature flags
+  // --------------------------------------------------------------------------
+  "features": {},
+
+  // Shutdown action — keep the container running after VS Code closes
+  "shutdownAction": "none"
+}
