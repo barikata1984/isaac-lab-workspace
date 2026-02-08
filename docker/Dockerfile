@@ -5,7 +5,7 @@
 # Adds:  Isaac Lab (from source), zsh, dev tooling, non-root user
 # =============================================================================
 
-ARG ISAAC_SIM_VERSION=5.1.0
+ARG ISAAC_SIM_VERSION=5.0.0
 FROM nvcr.io/nvidia/isaac-sim:${ISAAC_SIM_VERSION}
 
 # Prevent interactive prompts during apt install

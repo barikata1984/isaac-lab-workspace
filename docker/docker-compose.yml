@@ -16,8 +16,8 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       args:
-        ISAAC_SIM_VERSION: ${ISAAC_SIM_VERSION:-5.1.0}
-        ISAAC_LAB_VERSION: ${ISAAC_LAB_VERSION:-v2.3.2}
+        ISAAC_SIM_VERSION: ${ISAAC_SIM_VERSION:-5.0.0}
+        ISAAC_LAB_VERSION: ${ISAAC_LAB_VERSION:-v2.3.0}
         ISAAC_LAB_REPO: ${ISAAC_LAB_REPO:-https://github.com/isaac-sim/IsaacLab.git}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}

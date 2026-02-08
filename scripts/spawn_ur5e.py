@@ -20,7 +20,13 @@ simulation_app = app_launcher.app
 
 """Rest everything follows."""
 
+import os
 import torch
+
+import omni.kit.app
+from carb.eventdispatcher import get_eventdispatcher
+
+import isaacsim.core.utils.prims as prim_utils
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
@@ -28,6 +34,31 @@ from isaaclab.assets import Articulation
 from isaaclab.assets.articulation import ArticulationCfg
 from isaaclab.sim import SimulationContext
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+
+
+def _force_quit(_event):
+    """Called by Kit when the user clicks [x].  sim.step() blocks while the
+    simulation is stopped/paused, so a flag-based approach cannot work —
+    we must terminate the process from inside the callback."""
+    print("[INFO]: Window close requested. Shutting down...")
+    os._exit(0)
+
+
+# Subscribe as early as possible so it is active throughout the session.
+_quit_subs = [
+    get_eventdispatcher().observe_event(
+        event_name=omni.kit.app.GLOBAL_EVENT_POST_QUIT,
+        on_event=_force_quit,
+        observer_name="spawn_ur5e_quit",
+        order=0,
+    ),
+    get_eventdispatcher().observe_event(
+        event_name=omni.kit.app.GLOBAL_EVENT_PRE_SHUTDOWN,
+        on_event=_force_quit,
+        observer_name="spawn_ur5e_shutdown",
+        order=0,
+    ),
+]
 
 
 # UR5e configuration
@@ -87,7 +118,7 @@ def design_scene() -> tuple[dict, list[list[float]]]:
 
     # Robot origin
     origins = [[0.0, 0.0, 0.0]]
-    sim_utils.create_prim("/World/Origin", "Xform", translation=origins[0])
+    prim_utils.create_prim("/World/Origin", "Xform", translation=origins[0])
 
     # Spawn UR5e
     ur5e_cfg = UR5E_CFG.copy()
@@ -104,6 +135,9 @@ def run_simulator(sim: SimulationContext, entities: dict[str, Articulation], ori
     sim_dt = sim.get_physics_dt()
     count = 0
 
+    # NOTE: GUI pause/play causes a rendering freeze after resume.
+    # This is a known Isaac Sim 5.1 bug (https://github.com/isaac-sim/IsaacLab/issues/4279).
+    # sim.step() blocks while paused and resumes automatically on play.
     while simulation_app.is_running():
         # Reset every 1000 steps
         if count % 1000 == 0:
@@ -117,7 +151,8 @@ def run_simulator(sim: SimulationContext, entities: dict[str, Articulation], ori
             robot.reset()
             print("[INFO]: Resetting robot state...")
 
-        # Hold position (zero effort — PD controller maintains joint positions)
+        # Set PD position targets to hold the default pose
+        robot.set_joint_position_target(robot.data.default_joint_pos)
         robot.write_data_to_sim()
         sim.step()
         count += 1
